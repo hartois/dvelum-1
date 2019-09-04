@@ -32,6 +32,9 @@ use Dvelum\View;
 use Dvelum\Request;
 use Dvelum\Resource;
 use Dvelum\Response;
+use Designer_Factory;
+use Dvelum\File;
+use Ext_Code;
 
 class Controller extends App\Controller
 {
@@ -546,6 +549,63 @@ class Controller extends App\Controller
             if (file_exists($this->appConfig->get('jsPath') . 'app/system/desktop/' . strtolower($moduleName) . '.js'))
                 $projectData['includes']['js'][] = '/js/app/system/desktop/' . strtolower($moduleName) . '.js';
         }
+        return $projectData;
+    }
+
+    protected function renderSubProject($projectFile){
+        $manager = new \Designer_Manager($this->appConfig);
+        $designerConfig = Config::storage()->get('designer.php');
+        $projectFile = $manager->findWorkingCopy($projectFile);
+
+        $projectData = [
+            'applicationClassesNamespace' =>false,
+            'applicationRunNamespace' => false,
+            'includes'=>[
+                'js'=>[],
+                'css'=>[]
+            ]
+        ];
+
+        if(!file_exists($projectFile))
+            throw new \Exception('Invalid project file' . $projectFile);
+
+        /**
+         * @todo cache slow operation
+         */
+        $cachedKey = Designer_Factory::getProjectCacheKey($projectFile);
+
+        $project = Designer_Factory::loadProject($designerConfig, $projectFile);
+        $projectCfg = $project->getConfig();
+
+        Ext_Code::setRunNamespace($projectCfg['runnamespace']);
+
+        $projectData['applicationClassesNamespace'] = $projectCfg['namespace'];
+        $projectData['applicationRunNamespace'] = $projectCfg['runnamespace'];
+
+        $replace = $manager->getReplaceConfig();
+        $includes = Designer_Factory::getProjectIncludes($cachedKey , $project , true , $replace);
+
+        if(empty($includes))
+            return $projectData;
+
+        $wwwRoot = $this->request->wwwRoot();
+        foreach ($includes as $file)
+        {
+            if(File::getExt($file) == '.css')
+            {
+                if(strpos($file , '?') === false){
+                    $file = $file .'?'. $cachedKey;
+                }
+                $projectData['includes']['css'][]= str_replace('//','/',$wwwRoot.$file);
+            }else{
+
+                if(strpos($file , '?') === false){
+                    $file = $file .'?'. $cachedKey;
+                }
+                $projectData['includes']['js'][]= str_replace('//','/',$wwwRoot.$file);
+            }
+        }
+
         return $projectData;
     }
 }

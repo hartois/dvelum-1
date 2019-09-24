@@ -8,7 +8,7 @@ Ext.define('designer.addInstanceWindow',{
 	modal:true,
 	layout:'fit',
 	width:300,
-	height:130,
+	height:180,
 	controllerUrl:'',
 	parentObject:'',
 
@@ -57,8 +57,22 @@ Ext.define('designer.addInstanceWindow',{
 					valueField:'name',
 					store:this.objectsStore,
 					queryMode:'local',
-					name:'instance'
-				}
+					name:'instance',
+                    listeners:{
+						'select':function(cmp,record){
+                            //var record = this.objectsStore.getAt(records[0]);
+							console.log(record);
+							tthis = this;
+							this.down('form').down('[name=related]').setValue(record.get('related'))
+						}, scope: this
+					}
+				},
+				{
+					name:'related',
+					fieldLabel:'RelatedOf',
+                    xtype:'textfield',
+					readOnly:true
+                }
 			]
 		});
 

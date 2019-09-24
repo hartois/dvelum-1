@@ -307,6 +307,7 @@ class Backend_Designer_Sub_Project extends Backend_Designer_Sub
         $parent = Request::post('parent', 'alphanum', '');
         $name = Request::post('name', 'alphanum', false);
         $instance = Request::post('instance', 'alphanum', false);
+        $related  = Request::post('related', 'string', false);
 
         $errors = array();
 
@@ -315,10 +316,17 @@ class Backend_Designer_Sub_Project extends Backend_Designer_Sub
 
         $project = $this->_getProject();
 
-        if (!$project->objectExists($instance))
+        $objectProject = $this->_getProject();
+        if(!empty($related)){
+            $manager = new Designer_Manager($this->_configMain);
+            $projectFile = $manager->findWorkingCopy($related);
+            $objectProject = Designer_Factory::loadProject($this->_config, $projectFile);
+        }
+
+        if (!$objectProject->objectExists($instance))
             $errors['instance'] = $this->_lang->get('INVALID_VALUE');
 
-        $instanceObject = $project->getObject($instance);
+        $instanceObject = $objectProject->getObject($instance);
 
         if ($instanceObject->isInstance() /*|| !Designer_Project::isVisibleComponent($instanceObject->getClass())*/)
             $errors['instance'] = $this->_lang->get('INVALID_VALUE');
@@ -349,6 +357,9 @@ class Backend_Designer_Sub_Project extends Backend_Designer_Sub
         $object = Ext_Factory::object('Object_Instance');
         $object->setObject($instanceObject);
         $object->setName($name);
+
+        if(!empty($related))
+            $object->setRelated($related);
 
         if (!$project->addObject($parent, $object))
             Response::jsonError($this->_lang->get('CANT_EXEC'));
@@ -479,6 +490,27 @@ class Backend_Designer_Sub_Project extends Backend_Designer_Sub
         Response::jsonArray($manager->getProjectsList($node));
     }
 
+    protected function getRelatedProjects($project , & $list)
+    {
+        $manager = new Designer_Manager($this->_configMain);
+        $projectConfig = $project->getConfig();
+
+
+        if(isset($projectConfig['files']) && !empty($projectConfig['files']))
+        {
+            foreach ($projectConfig['files'] as $file)
+            {
+                if(File::getExt($file) === '.js' || File::getExt($file) === '.css')
+                    continue;
+
+                $projectFile = $manager->findWorkingCopy($file);
+                $subProject = Designer_Factory::loadProject($this->_config,  $projectFile);
+                $list[] = array('project' =>$subProject , 'file'=>$file);
+                $this->getRelatedProjects($subProject, $list);
+            }
+        }
+    }
+
     /**
      * Get list of project components that can be instantiated
      */
@@ -491,6 +523,21 @@ class Backend_Designer_Sub_Project extends Backend_Designer_Sub
         foreach ($items as $name => $object) {
             $list[] = array('name' => $name);
         }
+
+        $relatedProjects = array();
+        $this->getRelatedProjects($project, $relatedProjects);
+
+        foreach ($relatedProjects as $relatedProject){
+            /**
+             * @var $project Designer_Project
+             */
+            $project = $relatedProject['project'];
+            $items = $project->getChilds(Designer_Project::COMPONENT_ROOT);
+            foreach($items as $name => $object){
+                $list[] = array('name' => $name, 'related' => $relatedProject['file']);
+            }
+        }
+
         Response::jsonSuccess($list);
     }
 

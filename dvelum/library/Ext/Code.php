@@ -32,8 +32,11 @@ class Ext_Code
 			return $name;	
 	}
 	
-	static public function appendNamespace($name)
+	static public function appendNamespace($name,$namespace = false)
 	{
+	    if(!empty($namespace))
+            return $namespace . '.' . $name;
+
 		if(!is_null(self::$_namespace))
 			return self::$_namespace . '.' . $name;
 		else 

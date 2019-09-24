@@ -332,7 +332,9 @@ class Designer_Storage_Adapter_File extends Designer_Storage_Adapter_Abstract
             /**
              * @var Ext_Object_instance $item
              */
-            $instances[] = ['id' => $item['id'], 'name' => $item['data']->getName(), 'object' => $item['data']->getObject()->getName()];
+            $instances[] = ['id' => $item['id'], 'name' => $item['data']->getName(),
+                'object' => $item['data']->getObject()->getName(), 'related' => $item['data']->getRelated()
+            ];
         }
         return $instances;
     }
@@ -455,7 +457,18 @@ class Designer_Storage_Adapter_File extends Designer_Storage_Adapter_Abstract
             if (!$project->objectExists($v['id'])) {
                 throw new Exception('Broken component tree. Undefined instance object ' . $v['id']);
             }
-            if (!$project->objectExists($v['object'])) {
+            $related = '';
+            if(!empty($v['related'])){
+                $manager = new Designer_Manager(Config::storage()->get('main.php'));
+                $projectFile = $manager->findWorkingCopy($v['related']);
+                $objectProject = Designer_Factory::loadProject(Config::storage()->get('designer.php'), $projectFile);
+                $related = $v['related'];
+                $relatedNs = $objectProject->getConfig()['namespace'];
+            }else{
+                $objectProject = $project;
+            }
+
+            if (!$objectProject->objectExists($v['object'])) {
                 throw new Exception('Broken component tree. Undefined component object ' . $v['object'] . ' as instance ' . $v['id']);
             }
             /**
@@ -466,7 +479,9 @@ class Designer_Storage_Adapter_File extends Designer_Storage_Adapter_Abstract
             if (!$src->isInstance()) {
                 throw new Exception('Broken component tree. Object ' . $v['name'] . ' is not instance of Ext_Object_Instance');
             }
-            $src->setObject($project->getObject($v['object']));
+            $src->setRelated($related);
+            $src->setRelatedNs($relatedNs);
+            $src->setObject($objectProject->getObject($v['object']));
         }
     }
 }

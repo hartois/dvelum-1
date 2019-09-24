@@ -453,9 +453,9 @@ class Designer_Project_Code
             default :
                 if($object->isInstance())
                 {
-
+                    $ns = (!empty($object->getRelated())) ? $object->getRelatedNs() : false;
                     $result =  "\n". $objectVar . ' = Ext.create("' .
-                        Ext_Code::appendNamespace($object->getObject()->getName()) . '",' .
+                        Ext_Code::appendNamespace($object->getObject()->getName(), $ns) . '",' .
                         Utils_String::addIndent($object->__toString())."\n".
                         ');' . "\n";
 

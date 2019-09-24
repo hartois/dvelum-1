@@ -7,6 +7,8 @@ class Ext_Object_Instance extends Ext_Object
      * @var Ext_Object
      */
     protected $_object;
+    protected $related = '';
+    protected $relatedNs = '';
 
     /**
      * Always not extended
@@ -17,6 +19,22 @@ class Ext_Object_Instance extends Ext_Object
     protected function _loadConfig()
     {
         $this->_config = new Ext_Config(Ext::getPropertyClass('Instance'));
+    }
+
+    public function setRelated($related){
+        $this->related = $related;
+    }
+
+    public function getRelated(){
+        return $this->related;
+    }
+
+    public function setRelatedNs($namespace){
+        $this->relatedNs = $namespace;
+    }
+
+    public function getRelatedNs(){
+        return $this->relatedNs;
     }
 
     /**
@@ -71,6 +89,13 @@ class Ext_Object_Instance extends Ext_Object
     public function isInstance()
     {
         return true;
+    }
+
+    public function getDefineJs($namespace = false){
+        if(empty($namespace) && !empty($this->getRelatedNs()))
+            $namespace = $this->getRelatedNs();
+
+        parent::getDefineJs($namespace);
     }
 
     /**

@@ -69,6 +69,8 @@ class Record implements RecordInterface
      */
     protected $dataModel = null;
 
+    protected $preFactory = false;
+
     /**
      * The object constructor takes its name and identifier,
      * (the parameter is not required), if absent,
@@ -634,6 +636,28 @@ class Record implements RecordInterface
         return $service->record($name, $id, $shard);
     }
 
+    /**
+     * Set preFactory flag
+     * @param bool $preFactory
+     */
+    public function setPreFactory(bool $preFactory){
+        $this->preFactory = $preFactory;
+    }
+
+    /**
+     * Factory method of object creation with setting preFactory flag
+     * @param string $name
+     * @throws \Exception
+     * @return RecordInterface|RecordInterface[]
+     */
+    static public function preFactory(string $name){
+        /**
+         * @var \Dvelum\Orm\Service $service
+         */
+        $o = new static($name);
+        $o->setPreFactory(true);
+        return $o;
+    }
 
     /**
      * Get errors

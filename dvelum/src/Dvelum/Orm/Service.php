@@ -326,7 +326,7 @@ class Service
             /**
              * @var RecordInterface $o
              */
-            $o = new $recordClass($name);
+            $o = $recordClass::preFactory($name);
             /*
              * Apply links info
              */
